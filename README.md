@@ -6,4 +6,4 @@
 
 2. Run `python -m SimpleHTTPServer 8080`
 
-3. Open your browser at http://localhost:8080
+3. Open your browser at http://localhost:8080#appID, where appID is the id of your app
