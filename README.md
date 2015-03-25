@@ -1,4 +1,4 @@
-### Facebook chat backup
+### Facebook inbox backup
 
 This tool provides a way to backup your Facebook inbox to localStorage.
 
