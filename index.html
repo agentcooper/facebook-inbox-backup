@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Facebook chat backup</title>
+
+<style>
+  body {
+    padding: 20px;
+
+    font-size: 12px;
+    font-family: helvetica, arial, 'lucida grande', sans-serif;
+  }
+</style>
+
+<body>
+  <h1>Facebook chat backup</h1>
+
+  <div>
+    <select class="js-threads-list"><option disabled>Loading...</option></select>
+    <button class="js-get-messages">Get messages</button>
+    or
+    <button class="js-flush">Flush JSON</button>
+    or
+    <button class="js-remove">Reset data</button>
+  </div>
+</body>
+
+<script>
+  var App = {
+    threads: {},
+
+    timeout: 1000,
+
+    limit: 50,
+
+    retryTimeout: 10000,
+
+    currentThread: null,
+
+    threadsData: [],
+
+    init: function() {
+      try {
+        Array.prototype.push.apply(
+          this.threadsData,
+          JSON.parse(localStorage.getItem('threadsData'))
+        );
+
+        this._threadById = this.threadsData.reduce(function(hash, thread) {
+          hash['thread_' + thread.id] = thread;
+
+          return hash;
+        }, {});
+      } catch(e) {}
+
+      this.updateUI();
+
+      for (var selector in this.clicks) {
+        document.querySelector(selector)
+          .addEventListener('click', this.clicks[selector].bind(this));
+      }
+    },
+
+    thread: function(thread_id) {
+      if (typeof thread_id !== 'undefined') {
+        this.currentThread = thread_id;
+      }
+
+      return this.currentThread;
+    },
+
+    getThreads: function() {
+      var that = this;
+
+      if (this.threadsData.length !== 0) {
+        return;
+      }
+
+      FB.api('/me/inbox', function(res) {
+        that.threadsData.length = 0;
+        Array.prototype.push.apply(that.threadsData, res.data);
+        localStorage.setItem('threadsData', JSON.stringify(that.threadsData));
+
+        that.updateUI();
+      });
+    },
+
+    getPreviousMessages: function(thread_id, callbackEach, callbackDone) {
+      var that = this;
+
+      // need to provide old datetime
+      var BEFORE = '2004-03-20T14:14:18+0000';
+
+      var KEY = 'thread_' + thread_id;
+
+      this.threads[thread_id] = this.threads[thread_id] || [];
+
+      var messages = this.threads[thread_id];
+
+      try {
+        messages = JSON.parse(localStorage.getItem(KEY)) || [];
+      } catch(e) {
+        messages = [];
+      }
+
+      (function step() {
+        var fields = 'comments';
+
+        if (messages.length > 0) {
+          fields = fields + '.since(' + BEFORE + ').until(' +
+            messages[0].created_time + ').limit(' + that.limit + ')';
+        }
+
+        FB.api('/' + that.currentThread, {
+          fields: fields
+        }, function(res) {
+          if (res.error) {
+            console.error(res.error);
+
+            if (res.error.message.indexOf('(#613)') !== -1) {
+              console.log('Retrying in %s ms', that.retryTimeout);
+
+              return setTimeout(step, that.retryTimeout);
+            }
+          }
+
+          if (messages.length > 0 &&
+            res.comments.data[res.comments.data.length - 1].id === messages[0].id) {
+
+            if (res.comments.data.length === 1) {
+              return callbackDone(null, messages);
+            }
+
+            Array.prototype.unshift.apply(messages, res.comments.data.slice(0, -1));
+          } else {
+            Array.prototype.unshift.apply(messages, res.comments.data);
+          }
+
+          localStorage.setItem('thread_' + thread_id, JSON.stringify(messages));
+
+          callbackEach(res, thread_id);
+
+          return setTimeout(step, that.timeout);
+        });
+
+      })();
+    },
+
+    _getNames: function(thread) {
+      return thread.to.data.map(function(item) {
+        return item.name;
+      }).join(' & ');
+    },
+
+    updateUI: function() {
+      var that = this;
+
+      var html = '';
+
+      html += App.threadsData.map(function(thread) {
+        var names = '';
+
+        var isSelected = '';
+
+        var messages = [];
+
+        try {
+          var parsed = JSON.parse(localStorage.getItem('thread_' + thread.id));
+
+          if (Array.isArray(parsed)) {
+            messages = parsed;
+          }
+
+        } catch(e) {
+          messages = [];
+        }
+
+        if (thread.id === that.currentThread) {
+          isSelected = ' selected';
+        }
+
+        return '<option value=' + thread.id + isSelected + '>' +
+          that._getNames(thread) + ': ' + messages.length + ' messages </option>';
+      }).join('');
+
+      document.querySelector('.js-threads-list').innerHTML = html;
+    },
+
+    selectedThreadId: function() {
+      return document.querySelector('.js-threads-list').value;
+    },
+
+    clicks: {
+      '.js-flush': function() {
+        document.write(localStorage.getItem('thread_' + this.selectedThreadId()));
+      },
+
+      '.js-remove': function() {
+        localStorage.removeItem('thread_' + this.selectedThreadId());
+
+        this.updateUI();
+      },
+
+      '.js-get-messages': function() {
+        var that = this;
+
+        console.log('Started');
+
+        this.thread(this.selectedThreadId());
+
+        this.getPreviousMessages(this.thread(), function(res) {
+          console.log('Got %s messages', res.comments.data.length);
+
+          that.updateUI();
+        }, function(err, messages) {
+          console.log('Done', messages);
+
+          alert('Done!');
+        });
+      }
+    }
+  };
+
+  window.fbAsyncInit = function() {
+    var appId = document.location.hash.slice(1) || '866629436757632';
+
+    FB.init({
+      appId: appId,
+      version: 'v2.1'
+    });
+
+    App.init();
+
+    FB.login(function() {
+      App.getThreads();
+    });
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+
+</html>
