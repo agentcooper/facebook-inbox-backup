@@ -221,7 +221,7 @@
   };
 
   window.fbAsyncInit = function() {
-    var appId = document.location.hash.slice(1) || '866629436757632';
+    var appId = document.location.hash.slice(1) || '408463579315425';
 
     FB.init({
       appId: appId,
@@ -232,7 +232,7 @@
 
     FB.login(function() {
       App.getThreads();
-    });
+    }, { scope: 'read_mailbox' });
   };
 
   (function(d, s, id){
