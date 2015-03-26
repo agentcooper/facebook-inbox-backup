@@ -1,15 +1,21 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>Facebook chat backup</title>
 
-<style>
-  body {
-    padding: 20px;
+<head>
+  <meta charset="utf-8">
+  <title>Facebook chat backup</title>
 
-    font-size: 12px;
-    font-family: helvetica, arial, 'lucida grande', sans-serif;
-  }
-</style>
+  <style>
+    body {
+      padding: 20px;
+
+      font-size: 12px;
+      font-family: helvetica, arial, 'lucida grande', sans-serif;
+    }
+  </style>
+
+  <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+  <script src="timeline.js"></script>
+</head>
 
 <body>
   <h1>Facebook chat backup</h1>
@@ -21,6 +27,13 @@
     <button class="js-flush">Flush JSON</button>
     or
     <button class="js-remove">Reset data</button>
+    or
+    <button class="js-draw-chart">Draw chart</button>
+  </div>
+
+  <div>
+    <p>Timeline chart</p>
+    <div class="js-chart" style="width: 1200px; height: 350px;"></div>
   </div>
 </body>
 
@@ -30,9 +43,10 @@
 
     timeout: 1000,
 
+    // in reality, 30 is the maximum
     limit: 50,
 
-    retryTimeout: 10000,
+    retryTimeout: 30000,
 
     currentThread: null,
 
@@ -84,6 +98,14 @@
       });
     },
 
+    _clean: function(messages) {
+      messages.forEach(function(message) {
+        delete message.from;
+      });
+
+      return messages;
+    },
+
     getPreviousMessages: function(thread_id, callbackEach, callbackDone) {
       var that = this;
 
@@ -116,7 +138,10 @@
           if (res.error) {
             console.error(res.error);
 
-            if (res.error.message.indexOf('(#613)') !== -1) {
+            // rate limit exceeded
+            if (res.error.code === 613) {
+              that.retryTimeout += 5000;
+
               console.log('Retrying in %s ms', that.retryTimeout);
 
               return setTimeout(step, that.retryTimeout);
@@ -135,7 +160,7 @@
             Array.prototype.unshift.apply(messages, res.comments.data);
           }
 
-          localStorage.setItem('thread_' + thread_id, JSON.stringify(messages));
+          localStorage.setItem('thread_' + thread_id, JSON.stringify(that._clean(messages)));
 
           callbackEach(res, thread_id);
 
@@ -216,6 +241,12 @@
 
           alert('Done!');
         });
+      },
+
+      '.js-draw-chart': function() {
+
+        drawThread([this.selectedThreadId(), '1499118800308205']);
+      
       }
     }
   };
