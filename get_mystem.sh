@@ -2,7 +2,7 @@
 
 if [ -f "./bin/mystem" ]
 then
-	echo "Mystem found in ./bin"
+  echo "Mystem found in ./bin"
 else
   echo 'Downloading Mystem from https://tech.yandex.ru/mystem/'
 
