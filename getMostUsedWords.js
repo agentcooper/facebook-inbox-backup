@@ -1,4 +1,4 @@
-var parser = require('./text');
+var parser = require('./parser');
 
 function is(item, arr) {
     return item && arr.some(function(type) { return item.type === type; });
