@@ -1,6 +1,9 @@
 ### Facebook inbox backup
 
-This tool provides a way to backup your Facebook inbox to localStorage.
+This tool provides a way to backup your Facebook inbox.
+
+There is also some additional stats tools available,
+like getting most used words or drawing messages/day chart.
 
 ##### How to run:
 
