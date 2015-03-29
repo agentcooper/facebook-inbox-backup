@@ -11,6 +11,19 @@
       font-size: 12px;
       font-family: helvetica, arial, 'lucida grande', sans-serif;
     }
+
+    .container {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .messages-list {
+      width: 200px;
+    }
+
+    .g-hidden {
+      display: none;
+    }
   </style>
 
 </head>
@@ -26,17 +39,19 @@
     or
     <button class="js-remove">Reset data</button>
     or
-    <button class="js-draw-chart">Draw chart</button>
+    <button class="js-draw-chart">Show most used words</button>
     or
-    <button class="js-draw-chart-words">Draw word chart</button>
+    <button class="js-draw-chart-words">Draw message count chart</button>
   </div>
-<!--
-  <div>
-    <p>Timeline chart</p>
-    <div class="js-chart" style="width: 1200px; height: 350px;"></div>
-  </div> -->
 
-  <div class="js-messages-list"></div>
+  <div class="container">
+    <div class="messages-list js-messages-list"></div>
+
+    <div class="js-chart-wrapper g-hidden">
+      <p>Message count chart</p>
+      <div class="js-chart"></div>
+    </div>
+  </div>
 </body>
 
 <script src="/build.js"></script>

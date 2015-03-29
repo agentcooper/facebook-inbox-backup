@@ -4,6 +4,8 @@ var words = require('./words');
 
 var storage = require('localforage');
 
+var timeline = require('./timeline');
+
 window.storage = storage;
 
 var async = require('async');
@@ -216,7 +218,7 @@ module.exports = {
     },
 
     '.js-draw-chart': function() {
-      drawThread([this.selectedThreadId(), '1499118800308205']);
+      timeline.render(this, [this.selectedThreadId()]);
     },
 
     '.js-draw-chart-words': function() {
