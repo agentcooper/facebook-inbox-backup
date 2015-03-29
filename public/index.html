@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Facebook chat backup</title>
+
+  <style>
+    body {
+      padding: 20px;
+
+      font-size: 12px;
+      font-family: helvetica, arial, 'lucida grande', sans-serif;
+    }
+  </style>
+
+</head>
+
+<body>
+  <h1>Facebook chat backup</h1>
+
+  <div>
+    <select class="js-threads-list"><option disabled>Loading...</option></select>
+    <button class="js-get-messages">Get messages</button>
+    or
+    <button class="js-flush">Flush JSON</button>
+    or
+    <button class="js-remove">Reset data</button>
+    or
+    <button class="js-draw-chart">Draw chart</button>
+    or
+    <button class="js-draw-chart-words">Draw word chart</button>
+  </div>
+<!--
+  <div>
+    <p>Timeline chart</p>
+    <div class="js-chart" style="width: 1200px; height: 350px;"></div>
+  </div> -->
+
+  <div class="js-messages-list"></div>
+</body>
+
+<script src="/build.js"></script>
+
+<script>
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+
+</html>

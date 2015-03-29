@@ -1,0 +1,30 @@
+{
+  "name": "facebook-inbox-backup",
+  "version": "1.0.0",
+  "description": "This tool provides a way to backup your Facebook inbox to localStorage.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agentcooper/facebook-inbox-backup.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/agentcooper/facebook-inbox-backup/issues"
+  },
+  "homepage": "https://github.com/agentcooper/facebook-inbox-backup",
+  "dependencies": {
+    "body-parser": "^1.12.2",
+    "browserify": "^9.0.3",
+    "browserify-middleware": "^5.0.2",
+    "d3": "^3.5.5",
+    "express": "^4.12.3",
+    "localforage": "^1.2.2",
+    "natural": "^0.2.1",
+    "superagent": "^1.1.0"
+  }
+}
