@@ -17,4 +17,4 @@ Make sure you have Node.js installed. https://nodejs.org/
 
 3. Run `npm start`
 
-4. Open your browser at http://localhost:8080, where appID is the id of your app
+4. Open your browser at http://localhost:8080#appId, where appID is the id of your app
