@@ -1,7 +1,5 @@
 // https://tech.yandex.ru/mystem/doc/index-docpage/
 
-// @TODO: download mystem after npm install
-
 var sync = require('child_process').spawnSync;
 
 var spawn = require('child_process').spawn;
