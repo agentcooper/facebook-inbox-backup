@@ -4,8 +4,14 @@ function is(item, arr) {
     return item && arr.some(function(type) { return item.type === type; });
 }
 
-function compute(obj, callback) {
+function getMostUsedWords(obj, callback) {
   var wordHash = {};
+
+  if (!Array.isArray(obj.messages)) {
+    console.error('Bad input');
+
+    return callback(null, []);
+  }
 
   var text = obj.messages.map(function(message) {
     return message.message;
@@ -43,4 +49,4 @@ function compute(obj, callback) {
   });
 }
 
-module.exports = compute;
+module.exports = getMostUsedWords;

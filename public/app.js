@@ -2,6 +2,12 @@ var request = require('superagent');
 
 var words = require('./words');
 
+var storage = require('localforage');
+
+window.storage = storage;
+
+var async = require('async');
+
 module.exports = {
   threads: {},
 
@@ -17,25 +23,27 @@ module.exports = {
   threadsData: [],
 
   init: function() {
-    try {
+    var that = this;
+
+    storage.getItem('threadsData', function(err, threadsData) {
       Array.prototype.push.apply(
-        this.threadsData,
-        JSON.parse(localStorage.getItem('threadsData'))
+        that.threadsData,
+        threadsData || []
       );
 
-      this._threadById = this.threadsData.reduce(function(hash, thread) {
+      that._threadById = that.threadsData.reduce(function(hash, thread) {
         hash['thread_' + thread.id] = thread;
 
         return hash;
       }, {});
-    } catch(e) {}
 
-    this.updateUI();
+      that.updateUI();
 
-    for (var selector in this.clicks) {
-      document.querySelector(selector)
-        .addEventListener('click', this.clicks[selector].bind(this));
-    }
+      for (var selector in that.clicks) {
+        document.querySelector(selector)
+          .addEventListener('click', that.clicks[selector].bind(that));
+      }
+    });
   },
 
   thread: function(thread_id) {
@@ -49,16 +57,20 @@ module.exports = {
   getThreads: function() {
     var that = this;
 
-    if (this.threadsData.length !== 0) {
-      return;
-    }
+    storage.getItem('threadsData', function(err, threadsData) {
+      if (threadsData) {
+        return;
+      }
 
-    FB.api('/me/inbox', function(res) {
-      that.threadsData.length = 0;
-      Array.prototype.push.apply(that.threadsData, res.data);
-      localStorage.setItem('threadsData', JSON.stringify(that.threadsData));
+      FB.api('/me/inbox', function(res) {
+        that.threadsData.length = 0;
+        Array.prototype.push.apply(that.threadsData, res.data);
 
-      that.updateUI();
+        storage.setItem('threadsData', that.threadsData, function() {
+          that.updateUI();
+        });
+      });
+
     });
   },
 
@@ -76,19 +88,17 @@ module.exports = {
     // need to provide old datetime
     var BEFORE = '2004-03-20T14:14:18+0000';
 
-    var KEY = 'thread_' + thread_id;
-
     this.threads[thread_id] = this.threads[thread_id] || [];
 
     var messages = this.threads[thread_id];
 
-    try {
-      messages = JSON.parse(localStorage.getItem(KEY)) || [];
-    } catch(e) {
-      messages = [];
-    }
+    this.storedMessages(thread_id, function(err, value) {
+      messages = value || [];
 
-    (function step() {
+      step();
+    });
+
+    function step() {
       var fields = 'comments';
 
       if (messages.length > 0) {
@@ -124,22 +134,22 @@ module.exports = {
           Array.prototype.unshift.apply(messages, res.comments.data);
         }
 
-        localStorage.setItem('thread_' + thread_id, JSON.stringify(that._clean(messages)));
+        storage.setItem('thread_' + thread_id, that._clean(messages), function() {
+          callbackEach(res, thread_id);
 
-        callbackEach(res, thread_id);
-
-        return setTimeout(step, that.timeout);
+          return setTimeout(step, that.timeout);
+        });
       });
 
-    })();
+    };
   },
 
   _getNames: (thread) => {
     return thread.to.data.map(item => item.name).join(' & ');
   },
 
-  storedMessages: (id) => {
-    return localStorage.getItem('thread_' + id);
+  storedMessages: (id, callback) => {
+    return storage.getItem('thread_' + id, callback);
   },
 
   updateUI: function() {
@@ -147,33 +157,27 @@ module.exports = {
 
     var html = '';
 
-    html += this.threadsData.map(function(thread) {
-      var names = '';
+    async.map(this.threadsData, function(thread, callback) {
+      that.storedMessages(thread.id, function(err, messages) {
+        var names = '';
 
-      var isSelected = '';
+        var isSelected = '';
 
-      var messages = [];
+        var messages = messages || [];
 
-      try {
-        var parsed = JSON.parse(localStorage.getItem('thread_' + thread.id));
-
-        if (Array.isArray(parsed)) {
-          messages = parsed;
+        if (thread.id === that.currentThread) {
+          isSelected = ' selected';
         }
 
-      } catch(e) {
-        messages = [];
-      }
-
-      if (thread.id === that.currentThread) {
-        isSelected = ' selected';
-      }
-
-      return `<option value=${thread.id}` + isSelected +
-        `>${that._getNames(thread)}: ${messages.length} messages</option>`;
-    }).join('');
-
-    document.querySelector('.js-threads-list').innerHTML = html;
+        callback(
+          null,
+          `<option value=${thread.id}` + isSelected +
+            `>${that._getNames(thread)}: ${messages.length} messages</option>`
+        );
+      })
+    }, function(err, res) {
+      document.querySelector('.js-threads-list').innerHTML = res.join('');
+    })
   },
 
   selectedThreadId: function() {
@@ -182,13 +186,15 @@ module.exports = {
 
   clicks: {
     '.js-flush': function() {
-      document.write(localStorage.getItem('thread_' + this.selectedThreadId()));
+      this.storedMessages(this.selectedThreadId(), function(err, messages) {
+        document.write(JSON.stringify(messages));
+      });
     },
 
     '.js-remove': function() {
-      localStorage.removeItem('thread_' + this.selectedThreadId());
-
-      this.updateUI();
+      storage.removeItem('thread_' + this.selectedThreadId(), function(err) {
+        this.updateUI();
+      })
     },
 
     '.js-get-messages': function() {
@@ -214,27 +220,27 @@ module.exports = {
     },
 
     '.js-draw-chart-words': function() {
-      request
-      .post('/api/words')
-      .set('Accept', 'application/json')
-      .send({
-        messages: this.storedMessages(this.selectedThreadId())
-      }).end(function(err, res) {
-        var words = res.body.words;
+      this.storedMessages(this.selectedThreadId(), function(err, messages) {
+        request
+          .post('/api/words')
+          .send({ messages: messages })
+          .end(function(err, res) {
+            var words = res.body.words;
 
-        var html = '';
+            var html = '';
 
-        html += '<ol>';
+            html += '<ol>';
 
-        html += words.map(item => {
-          return '<li>' + item.word + ': ' + item.count + '</li>';
-        }).join('');
+            html += words.map(item => {
+              return '<li>' + item.word + ': ' + item.count + '</li>';
+            }).join('');
 
-        html += '</ol>';
+            html += '</ol>';
 
-        document.querySelector('.js-messages-list').innerHTML = html;
+            document.querySelector('.js-messages-list').innerHTML = html;
 
-        // words.render(res.body.words);
+            // words.render(res.body.words);
+          });
       });
     }
   }

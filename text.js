@@ -4,10 +4,8 @@ var sync = require('child_process').spawnSync;
 
 var spawn = require('child_process').spawn;
 
-var mystem = spawn('./mystem', ['-n', '-i', '-g', '--format=json']);
-
 function get(obj, callback) {
-	var mystem = sync('./mystem', ['-n', '-i', '-g', '--format=json'], { input: obj.input + '\n\r' });
+	var mystem = sync('./bin/mystem', ['-n', '-i', '-g', '--format=json'], { input: obj.input + '\n\r' });
 
 	var output = mystem.stdout.toString().split('\n').filter(Boolean).map(function(line) {
 		return JSON.parse(line);
@@ -27,24 +25,6 @@ function get(obj, callback) {
 
 	callback(null, output);
 }
-
-// mystem.stdout.on('data', function(data) {
-// 	var output = data.toString().split('\n').filter(Boolean).map(function(line) {
-// 		return JSON.parse(line);
-// 	});
-
-// 	_callback(null, output);
-// });
-
-// function get(obj, callback) {
-// 	_callback = callback;
-
-// 	mystem.stdin.write(obj.input + '\r\n');
-// }
-
-// get({ input: 'артем любит есть вкусную черешню' }, function(err, res) {
-// 	console.log(res);
-// });
 
 module.exports = {
 	get: get
