@@ -9,7 +9,7 @@ like getting most used words or drawing messages/day chart.
 
 Make sure you have Node.js installed. https://nodejs.org/
 
-1. `https://github.com/agentcooper/facebook-inbox-backup.git`
+1. `git clone https://github.com/agentcooper/facebook-inbox-backup.git`
 
 2. `cd facebook-inbox-backup && npm install`
 
